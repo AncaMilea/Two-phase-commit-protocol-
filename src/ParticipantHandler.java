@@ -2,10 +2,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 
@@ -15,6 +12,7 @@ public class ParticipantHandler extends Thread {
     final DataOutputStream dos;
     final Socket s;
     public int port;
+    public HashMap<Integer, String> vote_opt= new HashMap<>();
     public AtomicBoolean flagJoin = new AtomicBoolean(false);
 
 
@@ -37,18 +35,18 @@ public class ParticipantHandler extends Thread {
 
                 // receive the answer from client
                 toreturn= dis.readUTF();
+                System.out.println(toreturn);
                 received = (Token) MessageToken.getToken(toreturn);
 
 
                 if(received instanceof JoinToken){
-                    //dos.writeUTF((((JoinToken) received)._port).toString());
                     this.port= ((JoinToken) received)._port;
                     flagJoin.set(true);
                     System.out.println("Participant connected "+this.port);
-                   // dos.writeUTF("Join");
                 }
                 if(received instanceof VoteToken){
-
+                    this.vote_opt.put(((VoteToken) received)._port,((VoteToken) received)._vote);
+                    System.out.println("Sets the vote");
                 }
                 if(received instanceof OutcomeToken){
                     this.s.close();
@@ -59,15 +57,6 @@ public class ParticipantHandler extends Thread {
             }
         }
 
-//        try
-//        {
-//            // closing resources
-//            this.dis.close();
-//            this.dos.close();
-//
-//        }catch(IOException e){
-//            e.printStackTrace();
-//}
     }
     public void writeToParticipantDetails(String send, Set<Integer> all) throws IOException {
 
@@ -92,12 +81,8 @@ public class ParticipantHandler extends Thread {
                 now = it.next();
                 send = send + " " + now;
             }
-            System.out.println(send);
             dos.writeUTF(send);
         }
-    }
-    public void writeParticipantToParticipant(){
-
     }
     }
 

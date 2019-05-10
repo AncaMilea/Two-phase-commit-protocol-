@@ -16,6 +16,7 @@ public class Participant {
     Set<Integer> other_part= new HashSet<>();
     List<String> options= new ArrayList<>();
     String my_option= "VOTE ";
+    List<ParticipantHandler> handlers = new ArrayList<>();
     public Participant(String cport, String pport, String timeout,String failure){
         this.port_coord= Integer.parseInt(cport);
         this.port_part= Integer.parseInt(pport);
@@ -81,9 +82,6 @@ public class Participant {
         if(type instanceof VoteOptionsToken){
             this.options.addAll(((VoteOptionsToken) type)._votes);
 
-            for(String s: this.options){
-                System.out.println("My votes can be "+s);
-            }
             Random randNum = new Random();
             int aRandomPos = randNum.nextInt((this.options).size());//Returns a nonnegative random number less than the specified maximum (firstNames.Count).
 
@@ -118,15 +116,13 @@ public class Participant {
                         // obtaining input and out streams
                         DataInputStream dis = new DataInputStream(s.getInputStream());
                         DataOutputStream dos = new DataOutputStream(s.getOutputStream());
-
-                        // create a new thread object
-                      //  ParticipantHandler t = new ParticipantHandler(s, dis, dos);
-                        String received= dis.readUTF();
-                        System.out.println(received);
-                        //dos.writeUTF("From listening on port "+port_curr);
+//                        String received= dis.readUTF();
+//                        System.out.println(received);
+                        ParticipantHandler t = new ParticipantHandler(s, dis, dos);
+                        handlers.add(t);
 
                         // Invoking the start() method
-                        //new Thread(t).start();
+                        new Thread(t).start();
 
                     } catch (Exception e) {
                         try {
