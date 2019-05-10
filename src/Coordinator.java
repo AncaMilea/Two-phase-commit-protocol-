@@ -46,8 +46,6 @@ public class Coordinator {
 
         ServerSocket ss = new ServerSocket(cord.getPort());
 
-        // running infinite loop for getting
-        // client request
         while (i < cord.getNumber_of_part()) {
             Socket s = null;
 
@@ -85,7 +83,7 @@ public class Coordinator {
             public void run() {
                 int i = 0;
 
-                while (!(cord.all_part.size() == cord.handlers.size())) {
+                 {
                     for (i = 0; i < cord.handlers.size(); i++) {
                         if (cord.handlers.get(i).flagJoin.get()) {
                             cord.setAll_part(cord.handlers.get(i).port);
