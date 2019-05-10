@@ -2,6 +2,10 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 
@@ -31,25 +35,17 @@ public class ParticipantHandler extends Thread {
         {
             try {
 
-                // Ask user what he wants
-//                dos.writeUTF("What do you want?[Date | Time]..\n"+
-//                        "Type Exit to terminate connection.");
-
                 // receive the answer from client
                 toreturn= dis.readUTF();
                 received = (Token) MessageToken.getToken(toreturn);
+
 
                 if(received instanceof JoinToken){
                     //dos.writeUTF((((JoinToken) received)._port).toString());
                     this.port= ((JoinToken) received)._port;
                     flagJoin.set(true);
+                    System.out.println("Participant connected "+this.port);
                    // dos.writeUTF("Join");
-                }
-                if(received instanceof DetailsToken){
-
-                }
-                if(received instanceof VoteOptionsToken){
-
                 }
                 if(received instanceof VoteToken){
 
@@ -58,36 +54,6 @@ public class ParticipantHandler extends Thread {
                     this.s.close();
                 }
 
-//                System.out.println(received);
-//                if(received.equals("Exit"))
-//                {
-//                    System.out.println("Client " + this.s + " sends exit...");
-//                    System.out.println("Closing this connection.");
-//                    this.s.close();
-//                    System.out.println("Connection closed");
-//                    break;
-//                }
-
-                // creating Date object
-
-                // write on output stream based on the
-                // answer from the client
-//                switch (toreturn) {
-//
-//                    case "Date" :
-//                        toreturn = fordate.format(date);
-//                        dos.writeUTF(toreturn);
-//                        break;
-//
-//                    case "Time" :
-//                        toreturn = fortime.format(date);
-//                        dos.writeUTF(toreturn);
-//                        break;
-//
-//                    default:
-//                        dos.writeUTF("Invalid input");
-//                        break;
-//                }
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -103,4 +69,35 @@ public class ParticipantHandler extends Thread {
 //            e.printStackTrace();
 //}
     }
-}
+    public void writeToParticipantDetails(String send, Set<Integer> all) throws IOException {
+
+        if (send.equals("DETAILS")) {
+            int now;
+            Iterator<Integer> it = all.iterator();
+            while (it.hasNext()) {
+                now = it.next();
+                if (now != this.port) {
+                    send = send + " " + Integer.toString(now);
+                }
+            }
+
+            dos.writeUTF(send);
+        }
+    }
+    public void writeToParticipantOptions(String send, List<String> opt) throws IOException {
+        if (send.equals("VOTE_OPTIONS")) {
+            String now;
+            Iterator<String> it = opt.iterator();
+            while (it.hasNext()) {
+                now = it.next();
+                send = send + " " + now;
+            }
+            System.out.println(send);
+            dos.writeUTF(send);
+        }
+    }
+    public void writeParticipantToParticipant(){
+
+    }
+    }
+

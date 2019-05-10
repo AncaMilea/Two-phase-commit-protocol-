@@ -95,13 +95,40 @@ public class Coordinator {
                     }
 
                 }
-                Iterator<Integer> it= cord.all_part.iterator();
-                while(it.hasNext()) {
-                    System.out.println(it.next());
+                String send= "DETAILS";
+                for (i = 0; i < cord.handlers.size(); i++) {
+                    if (cord.handlers.get(i).flagJoin.get()) {
+                        try {
+                            cord.handlers.get(i).writeToParticipantDetails(send, cord.all_part);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+
+                    }
+
                 }
+
             }
         }).start();
 
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                String send= "VOTE_OPTIONS";
+                for (int i = 0; i < cord.handlers.size(); i++) {
+                    if (cord.handlers.get(i).flagJoin.get()) {
+                        try {
+                            cord.handlers.get(i).writeToParticipantOptions(send, cord.getOptions());
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+
+                    }
+
+                }
+
+            }
+        }).start();
     }
 
 

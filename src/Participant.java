@@ -1,15 +1,19 @@
+import java.awt.*;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.util.Scanner;
+import java.util.*;
+import java.util.List;
 
 public class Participant {
     Integer port_coord;
     Integer port_part;
     Integer timeout;
     Integer failure_type;
+    Set<Integer> other_part= new HashSet<>();
+    List<String> options= new ArrayList<>();
     public Participant(String cport, String pport, String timeout,String failure){
         this.port_coord= Integer.parseInt(cport);
         this.port_part= Integer.parseInt(pport);
@@ -59,27 +63,45 @@ public class Participant {
 //                String tosend = scn.nextLine();
                 dos.writeUTF("JOIN "+p.getPort_part().toString());
 
-                // If client sends exit,close this connection
-                // and then break from the while loop
-//                if(tosend.equals("Exit"))
-//                {
-//                    System.out.println("Closing this connection : " + s);
-//                    s.close();
-//                    System.out.println("Connection closed");
-//                    break;
-//                }
-
-                // printing date or time as requested by client
                 String received = dis.readUTF();
-                System.out.println(received);
+                p.decrypt(received);
+//                String toreturn= dis.readUTF();
+//                Token received1 = (Token) MessageToken.getToken(toreturn);
+//                if(received1 instanceof DetailsToken){
+//
+//                }
+//                if(received1 instanceof VoteOptionsToken){
+//
+//                }
             }
 
-            // closing resources
-            //scn.close();
-//            dis.close();
-//            dos.close();
         }catch(Exception e){
             e.printStackTrace();
+        }
+    }
+    public void decrypt(String received)
+    {
+        Token type = (Token) MessageToken.getToken(received);
+        if(type instanceof DetailsToken){
+            this.other_part.addAll(((DetailsToken) type)._ports);
+
+            Iterator<Integer> it= this.other_part.iterator();
+            while(it.hasNext()){
+                System.out.println("I got "+it.next());
+            }
+        }
+        if(type instanceof VoteOptionsToken){
+            this.options.addAll(((VoteOptionsToken) type)._votes);
+
+            for(String s: this.options){
+                System.out.println("My votes can be "+s);
+            }
+            Random randNum = new Random();
+            int aRandomPos = randNum.nextInt((this.options).size());//Returns a nonnegative random number less than the specified maximum (firstNames.Count).
+
+            String currName = this.options.get(aRandomPos);
+            System.out.println("My option is "+currName);
+
         }
     }
 }

@@ -1,6 +1,5 @@
-import java.util.ArrayList;
-import java.util.List;
-import java.util.StringTokenizer;
+import java.util.*;
+
 /**
  * A scanner and parser for requests.
  */
@@ -23,7 +22,7 @@ class MessageToken{
                 return null;
         }
         if (firstToken.equals("DETAILS")) {
-            List<Integer> ports = new ArrayList<>();
+            Set<Integer> ports = new HashSet<>();
             while (sTokenizer.hasMoreTokens())
                 ports.add(Integer.parseInt(sTokenizer.nextToken()));
             return new DetailsToken(req, ports);
@@ -79,11 +78,11 @@ class JoinToken extends Token {
  * Syntax: YELL &lt;msg&gt;
  */
 class DetailsToken extends Token {
-    List<Integer> _ports;
+    Set<Integer> _ports;
 
-    DetailsToken(String req, List<Integer> porting) {
+    DetailsToken(String req, Set<Integer> porting) {
         this._req = req;
-        this._ports = new ArrayList<>(porting);
+        this._ports = new HashSet<Integer>(porting);
     }
 }
 
