@@ -17,6 +17,7 @@ public class Participant {
     List<String> options= new ArrayList<>();
     String my_option= "VOTE ";
     List<ParticipantHandler> handlers = new ArrayList<>();
+    HashMap<Integer,String> vote_opt_port= new HashMap<>();
     public Participant(String cport, String pport, String timeout,String failure){
         this.port_coord= Integer.parseInt(cport);
         this.port_part= Integer.parseInt(pport);
@@ -120,6 +121,7 @@ public class Participant {
 //                        System.out.println(received);
                         ParticipantHandler t = new ParticipantHandler(s, dis, dos);
                         handlers.add(t);
+                        System.out.println("size "+handlers.size());
 
                         // Invoking the start() method
                         new Thread(t).start();
@@ -133,8 +135,29 @@ public class Participant {
                         e.printStackTrace();
                     }
                 }
+
             }
+
         }).start();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+
+                int i = 0;
+            while(true) {
+                for (i = 0; i < handlers.size(); i++) {
+                    if (handlers.get(i).flagVote.get()) {
+                       vote_opt_port.put(handlers.get(i).port_v,handlers.get(i).vote);
+                        //System.out.println(cord.handlers.get(i).port);
+                    }
+
+                }
+            }
+            }
+
+        }).start();
+
+
 
     }
     public void startTalking(String my_opt)

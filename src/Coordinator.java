@@ -82,8 +82,6 @@ public class Coordinator {
             @Override
             public void run() {
                 int i = 0;
-
-                 {
                     for (i = 0; i < cord.handlers.size(); i++) {
                         if (cord.handlers.get(i).flagJoin.get()) {
                             cord.setAll_part(cord.handlers.get(i).port);
@@ -92,7 +90,7 @@ public class Coordinator {
 
                     }
 
-                }
+
                 String send= "DETAILS";
                 for (i = 0; i < cord.handlers.size(); i++) {
                     if (cord.handlers.get(i).flagJoin.get()) {
