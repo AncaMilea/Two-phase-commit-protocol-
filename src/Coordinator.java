@@ -12,6 +12,8 @@ public class Coordinator {
         List<String> options;
         Set<Integer> all_part= new HashSet<>();
         List<ParticipantHandler> handlers = new ArrayList<>();
+        List<String> outcomes = new ArrayList<>();
+        Set<String> outcomes_not_replicas = new HashSet<>();
     public Coordinator(String port, String parts, List<String> options)
     {
         this.port = Integer.parseInt(port);
@@ -122,6 +124,36 @@ public class Coordinator {
                     }
 
                 }
+
+            }
+        }).start();
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while(!(cord.outcomes.size() == cord.handlers.size())) {
+                    for (int i = 0; i < cord.handlers.size(); i++) {
+                        if (cord.handlers.get(i).flagVote.get()) {
+                            cord.outcomes.add(cord.handlers.get(i).final_v);
+                        }
+
+                    }
+                    if(cord.outcomes.size()==cord.handlers.size())
+                    {
+                        for(String st: cord.outcomes){
+                            cord.outcomes_not_replicas.add(st);
+                        }
+                        if(cord.outcomes_not_replicas.size()==1){
+                            Iterator<String> it = cord.outcomes_not_replicas.iterator();
+                            while(it.hasNext()){
+                                System.out.println("Final " +it.next());
+                            }
+
+                    }else{
+                            System.out.println("need restart");
+                        }
+                    }
+             }
 
             }
         }).start();

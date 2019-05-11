@@ -12,9 +12,7 @@ public class ParticipantHandler extends Thread {
     final DataOutputStream dos;
     final Socket s;
     public int port;
-    public HashMap<Integer, String> vote_opt= new HashMap<>();
-    public String vote;
-    public Integer port_v;
+    public String final_v;
     public AtomicBoolean flagJoin = new AtomicBoolean(false);
     public AtomicBoolean flagVote = new AtomicBoolean(false);
 
@@ -38,7 +36,7 @@ public class ParticipantHandler extends Thread {
 
                 // receive the answer from client
                 toreturn= dis.readUTF();
-                System.out.println(toreturn);
+            //    System.out.println(toreturn);
                 received = (Token) MessageToken.getToken(toreturn);
 
 
@@ -47,15 +45,9 @@ public class ParticipantHandler extends Thread {
                     flagJoin.set(true);
                     System.out.println("Participant connected "+this.port);
                 }
-                if(received instanceof VoteToken){
-                   // this.vote_opt.put(((VoteToken) received)._port,((VoteToken) received)._vote);
-                    this.vote=((VoteToken) received)._vote;
-                    this.port_v=((VoteToken) received)._port;
-                    flagVote.set(true);
-                    System.out.println("Sets the vote");
-                }
                 if(received instanceof OutcomeToken){
-                    this.s.close();
+                    this.final_v = ((OutcomeToken) received)._outcome;
+                    flagVote.set(true);
                 }
 
             } catch (IOException e) {
