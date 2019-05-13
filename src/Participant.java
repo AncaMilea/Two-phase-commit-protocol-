@@ -1,6 +1,7 @@
 import java.awt.*;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
@@ -144,8 +145,13 @@ public class Participant {
                          public void run() {
                              String received= null;
                              while(vote_opt_port.size()<other_part.size()) {
+
                                  try {
-                                     received = dis.readUTF();
+                                     if(dis.available()>0)
+                                       received = dis.readUTF();
+                                 } catch (EOFException e) {
+                                     System.out.println("I reached the end of the file");
+                                      break;
                                  } catch (IOException e) {
                                      e.printStackTrace();
                                  }
