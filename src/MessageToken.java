@@ -51,6 +51,9 @@ class MessageToken{
             }
 
             return new VoteToken(req, port, vote);
+        }
+        if(firstToken.equals("RESTART")){
+            return new RestartToken(req);
         }else
             return  null;// Ignore request..
     }
@@ -109,9 +112,6 @@ class OutcomeToken extends Token {
         this._ports = new ArrayList<>(porting);
     }
 }
-/**
- * Syntax: EXIT
- */
 class VoteToken extends Token {
     String _vote;
     Integer _port;
@@ -121,3 +121,8 @@ class VoteToken extends Token {
         this._port=port;
     }
 }
+
+class RestartToken extends Token {
+    RestartToken(String req) { this._req = req; }
+}
+

@@ -36,7 +36,7 @@ public class ParticipantHandler extends Thread {
 
                 // receive the answer from client
                 toreturn= dis.readUTF();
-            //    System.out.println(toreturn);
+                //System.out.println(toreturn);
                 received = (Token) MessageToken.getToken(toreturn);
 
 
@@ -69,6 +69,7 @@ public class ParticipantHandler extends Thread {
             }
 
             dos.writeUTF(send);
+            dos.flush();
         }
     }
     public void writeToParticipantOptions(String send, List<String> opt) throws IOException {
@@ -79,7 +80,9 @@ public class ParticipantHandler extends Thread {
                 now = it.next();
                 send = send + " " + now;
             }
+            System.out.println(send);
             dos.writeUTF(send);
+            dos.flush();
         }
     }
     }

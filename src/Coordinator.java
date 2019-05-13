@@ -109,24 +109,7 @@ public class Coordinator {
             }
         }).start();
 
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                String send= "VOTE_OPTIONS";
-                for (int i = 0; i < cord.handlers.size(); i++) {
-                    if (cord.handlers.get(i).flagJoin.get()) {
-                        try {
-                            cord.handlers.get(i).writeToParticipantOptions(send, cord.getOptions());
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-
-                    }
-
-                }
-
-            }
-        }).start();
+        cord.sendVoteOpt(cord,cord.getOptions());
 
         new Thread(new Runnable() {
             @Override
@@ -144,16 +127,60 @@ public class Coordinator {
                             cord.outcomes_not_replicas.add(st);
                         }
                         if(cord.outcomes_not_replicas.size()==1){
+                            String result;
                             Iterator<String> it = cord.outcomes_not_replicas.iterator();
                             while(it.hasNext()){
-                                System.out.println("Final " +it.next());
+                                result=it.next();
+                                System.out.println("Final " +result);
+                                if(result.equals("Tie")) {
+                                    for (int i = 0; i < cord.handlers.size(); i++) {
+                                        try {
+                                            cord.handlers.get(i).dos.writeUTF("RESTART");
+                                            cord.handlers.get(i).dos.flush();
+                                        } catch (IOException e) {
+                                            e.printStackTrace();
+                                        }
+                                    }
+                                    cord.outcomes_not_replicas.clear();
+                                    cord.outcomes.clear();
+                                    if(cord.options.size()>1) {
+                                        cord.options.remove(cord.options.size() - 1);
+                                    }
+                                    cord.sendVoteOpt(cord,cord.getOptions());
+                                }
                             }
 
+
                     }else{
-                            System.out.println("need restart");
+                           if(cord.outcomes_not_replicas.size()==0)
+                           {
+                               System.out.println("Si'a bagat ceva in rezultat");
+                           }else{
+                               System.out.println("Nici nu ar trebui sa fie asa ceva uman posibil");
+                           }
                         }
                     }
              }
+
+            }
+        }).start();
+    }
+    public void sendVoteOpt(Coordinator cord,List<String> opt){
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                String send= "VOTE_OPTIONS";
+                for (int i = 0; i < cord.handlers.size(); i++) {
+                    if (cord.handlers.get(i).flagJoin.get()) {
+                        try {
+                            cord.handlers.get(i).writeToParticipantOptions(send, opt);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+
+                    }
+
+                }
 
             }
         }).start();
