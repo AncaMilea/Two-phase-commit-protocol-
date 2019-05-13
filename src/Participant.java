@@ -9,8 +9,10 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Participant {
@@ -28,6 +30,9 @@ public class Participant {
     Map<Integer,String> vote_opt_port= new ConcurrentHashMap<>();
     Map<String,Integer> keep_score= new ConcurrentHashMap<String,Integer>();
     AtomicBoolean flagR= new AtomicBoolean(false);
+    CyclicBarrier barrier;
+
+
     public Participant(String cport, String pport, String timeout,String failure){
         this.port_coord= Integer.parseInt(cport);
         this.port_part= Integer.parseInt(pport);
@@ -151,41 +156,51 @@ public class Participant {
             @Override
             public void run() {
                 ServerSocket ss;
+                barrier = new CyclicBarrier(other_part.size()+1);
                 try {
                     ss = new ServerSocket(port_curr);
                     all_s.add(ss);
 
-                while (true) {
+
+                while (all.size() < other_part.size()) {
                     Socket s;
                         // socket object to receive incoming client requests
                     try {
+                        System.out.println("Size of other part:" + other_part.size());
                         s = ss.accept();
                         all.add(s);
 
                         System.out.println("A new participant is connected : " + s);
 
                         // obtaining input and out streams
-                        DataInputStream dis = new DataInputStream(s.getInputStream());
+
 
                         new Thread(new Runnable() {
                             @Override
                             public void run() {
                                 String received = null;
-                                while (vote_opt_port.size() < other_part.size()) {
                                     try {
-                                        if (dis.available() > 0)
-                                            received = dis.readUTF();
+                                        DataInputStream dis = new DataInputStream(s.getInputStream());
+                                        while (true)
+                                        {
+                                            if (dis.available() > 0) {
+                                                received = dis.readUTF();
+                                                saveVote(received);
+                                                System.out.println("I am done");
+                                                System.out.println(vote_opt_port.size());
+                                                barrier.await();
+                                            }
+                                        }
+
                                     } catch (EOFException e) {
-                                        break;
+
                                     } catch (IOException e) {
                                         e.printStackTrace();
+                                } catch (InterruptedException e) {
+                                        e.printStackTrace();
+                                    } catch (BrokenBarrierException e) {
+                                        e.printStackTrace();
                                     }
-
-                                    saveVote(received);
-
-                                }
-                                start_choosing(vote_opt_port);
-
                             }
                         }).start();
                     }catch(SocketException e) {
@@ -196,7 +211,17 @@ public class Participant {
 
 
                 }
+                System.out.println("Before");
+                barrier.await();
+                System.out.println("After");
+                start_choosing(vote_opt_port);
+
+
                 } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } catch (BrokenBarrierException e) {
                     e.printStackTrace();
                 }
 
@@ -223,9 +248,11 @@ public class Participant {
                         try {
                             s = new Socket(ip, it.next());
                         }catch (SocketException e){
+
+                            System.out.println("Socket Exception");
                             break;
                         }
-                        all.add(s);
+//                        all.add(s);
                         // obtaining input and out streams
                         DataOutputStream dos = new DataOutputStream(s.getOutputStream());
 
