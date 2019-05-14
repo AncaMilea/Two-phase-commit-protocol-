@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.*;
+import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 public class Coordinator {
@@ -14,6 +16,7 @@ public class Coordinator {
         List<ParticipantHandler> handlers = new ArrayList<>();
         List<String> outcomes = new ArrayList<>();
         Set<String> outcomes_not_replicas = new HashSet<>();
+    public AtomicBoolean flagStartOptions = new AtomicBoolean(false);
     public Coordinator(String port, String parts, List<String> options)
     {
         this.port = Integer.parseInt(port);
@@ -108,8 +111,25 @@ public class Coordinator {
 
             }
         }).start();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                String send= "VOTE_OPTIONS";
+                for (int i = 0; i < cord.handlers.size(); i++) {
+                    if (cord.handlers.get(i).flagJoin.get()) {
+                        try {
+                            cord.handlers.get(i).writeToParticipantOptions(send, cord.options);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
 
-        cord.sendVoteOpt(cord,cord.getOptions());
+                    }
+
+                }
+
+            }
+        }).start();
+
 
         new Thread(new Runnable() {
             @Override
@@ -118,6 +138,7 @@ public class Coordinator {
                     for (int i = 0; i < cord.handlers.size(); i++) {
                         if (cord.handlers.get(i).flagVote.get()) {
                             cord.outcomes.add(cord.handlers.get(i).final_v);
+                            System.out.println("From Handlers "+cord.handlers.get(i).final_v);
                         }
 
                     }
@@ -125,14 +146,26 @@ public class Coordinator {
                     {
                         for(String st: cord.outcomes){
                             cord.outcomes_not_replicas.add(st);
+                            System.out.println("from outcomes not replicas "+st);
                         }
                         if(cord.outcomes_not_replicas.size()==1){
                             String result;
                             Iterator<String> it = cord.outcomes_not_replicas.iterator();
-                            while(it.hasNext()){
-                                result=it.next();
-                                System.out.println("Final " +result);
-                                if(result.equals("Tie")) {
+                            result = it.next();
+                                System.out.println("Final " + result);
+                                if (result.contains("_Tie_")) {
+                                    if (cord.options.size() > 1) {
+                                        cord.options.remove(cord.options.size() - 1);
+                                    }
+                                    //sets to false the flags so that it waits until the new value comes in
+                                    if(cord.options.size()>1) {
+                                        for (int i = 0; i < cord.handlers.size(); i++) {
+                                            if (cord.handlers.get(i).flagVote.get()) {
+                                                cord.handlers.get(i).flagVote.set(false);
+                                            }
+
+                                        }
+                                    //sents to each participant the Restart instruction so that it cleans all
                                     for (int i = 0; i < cord.handlers.size(); i++) {
                                         try {
                                             cord.handlers.get(i).dos.writeUTF("RESTART");
@@ -141,26 +174,54 @@ public class Coordinator {
                                             e.printStackTrace();
                                         }
                                     }
-                                    cord.outcomes_not_replicas.clear();
-                                    cord.outcomes.clear();
-                                    if(cord.options.size()>1) {
-                                        cord.options.remove(cord.options.size() - 1);
-                                    }
-                                    cord.sendVoteOpt(cord,cord.getOptions());
-                                }
-                            }
 
+                                        //sends once again all the options to trigger the voting again
+                                        String send = "VOTE_OPTIONS";
+                                        for (int i = 0; i < cord.handlers.size(); i++) {
+                                            if (cord.handlers.get(i).flagJoin.get()) {
+                                                try {
+                                                    cord.handlers.get(i).writeToParticipantOptions(send, cord.options);
+                                                } catch (IOException e) {
+                                                    e.printStackTrace();
+                                                }
+
+                                            }
+                                        }
+                                        //erases all the elements
+                                        cord.outcomes_not_replicas.clear();
+                                        cord.outcomes.clear();
+                                    }else{
+                                        System.out.println("The only possible option "+cord.options.get(0));
+                                        cord.outcomes_not_replicas.clear();
+                                        cord.outcomes.clear();
+                                        break;
+                                    }
+
+
+                                }else{
+                                    if(result.equals(" V"))
+                                    {
+                                        System.out.println("Should break it");
+                                    }else{
+                                        System.out.println("be done");
+                                        cord.outcomes_not_replicas.clear();
+                                        cord.outcomes.clear();
+                                        break;
+                                    }
+
+                                }
 
                     }else{
                            if(cord.outcomes_not_replicas.size()==0)
                            {
                                System.out.println("Si'a bagat ceva in rezultat");
                            }else{
-                               System.out.println("Nici nu ar trebui sa fie asa ceva uman posibil");
+                               System.out.println("Nici nu ar trebui sa fie asa ceva uman posibil"); //bine ca a intrat aici...fmmm
                            }
                         }
                     }
              }
+                System.out.println("I am out of thread");
 
             }
         }).start();

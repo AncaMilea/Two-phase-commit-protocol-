@@ -36,7 +36,7 @@ public class ParticipantHandler extends Thread {
 
                 // receive the answer from client
                 toreturn= dis.readUTF();
-                //System.out.println(toreturn);
+                System.out.println("I am in handler "+toreturn);
                 received = (Token) MessageToken.getToken(toreturn);
 
 
@@ -47,7 +47,7 @@ public class ParticipantHandler extends Thread {
                 }
                 if(received instanceof OutcomeToken){
                     this.final_v = ((OutcomeToken) received)._outcome;
-                    flagVote.set(true);
+                    this.flagVote.set(true);
                 }
 
             } catch (IOException e) {
@@ -80,7 +80,7 @@ public class ParticipantHandler extends Thread {
                 now = it.next();
                 send = send + " " + now;
             }
-            System.out.println(send);
+
             dos.writeUTF(send);
             dos.flush();
         }

@@ -26,10 +26,12 @@ public class Participant {
     String my_vote_letter;
     String final_resul=null;
     List<Socket> all= new CopyOnWriteArrayList<>();
+    List<Socket> allOtherPeers= new CopyOnWriteArrayList<>();
     List<ServerSocket> all_s= new CopyOnWriteArrayList<>();
     Map<Integer,String> vote_opt_port= new ConcurrentHashMap<>();
     Map<String,Integer> keep_score= new ConcurrentHashMap<String,Integer>();
     AtomicBoolean flagR= new AtomicBoolean(false);
+    AtomicBoolean flagWhile= new AtomicBoolean(false);
     CyclicBarrier barrier;
 
 
@@ -81,22 +83,28 @@ public class Participant {
                     @Override
                     public void run() {
                         while (true) {
-                            if (p.flagR.get()) {
-                                try {
-                                    String out= "OUTCOME "+ p.final_resul;
-                                    for(Integer it:p.other_part){
-                                        out= out+" "+ it;
+                            while (p.flagWhile.get() == false) {
+                                if (p.flagR.get() == true) {
+                                    try {
+                                        String out = "OUTCOME " + p.final_resul;
+                                        for (Integer it : p.other_part) {
+                                            out = out + " " + it;
+                                        }
+                                        out = out + " " + p.getPort_part();
+                                        System.out.println("Before token sent "+out);
+                                        if (out != null) {
+                                            dos.writeUTF(out);
+                                            dos.flush();
+
+                                        }
+                                    } catch (IOException e) {
+                                        e.printStackTrace();
                                     }
-                                    out= out+" "+p.getPort_part();
-                                    if(out != null) {
-                                        dos.writeUTF(out);
-                                        dos.flush();
-                                    }
-                                } catch (IOException e) {
-                                    e.printStackTrace();
+                                    p.flagWhile.set(true);
                                 }
                             }
                         }
+
                     }
                 }).start();
 
@@ -118,11 +126,11 @@ public class Participant {
         }
         if(type instanceof VoteOptionsToken){
             this.options.addAll(((VoteOptionsToken) type)._votes);
-//            System.out.println(this.options.size());
+            //System.out.println(this.options.size());
 
-//            for(String v: this.options) {
-//                System.out.println("Possible votes "+v);
-//            }
+            for(String v: this.options) {
+                System.out.println("Possible votes "+v);
+            }
 
             Random randNum = new Random();
             int aRandomPos = randNum.nextInt((this.options).size());//Returns a nonnegative random number less than the specified maximum (firstNames.Count).
@@ -135,6 +143,7 @@ public class Participant {
 
         }
         if(type instanceof RestartToken){
+            System.out.println("Restarting ");
             for(Socket s:all){
                 s.close();
             }
@@ -145,9 +154,13 @@ public class Participant {
             this.my_option=null;
             this.final_resul=null;
             this.my_vote_letter=null;
+            this.all_s.clear();
             this.all.clear();
             this.vote_opt_port.clear();
             keep_score.clear();
+            allOtherPeers.clear();
+            this.flagR.set(false);
+            this.flagWhile.set(false);
         }
 
     }
@@ -185,9 +198,8 @@ public class Participant {
                                         {
                                             if (dis.available() > 0) {
                                                 received = dis.readUTF();
+                                                System.out.println("I am going to save the vote "+received);
                                                 saveVote(received);
-                                                System.out.println("I am done");
-                                                System.out.println(vote_opt_port.size());
                                                 barrier.await();
                                             }
                                         }
@@ -195,7 +207,8 @@ public class Participant {
                                     } catch (EOFException e) {
 
                                     } catch (IOException e) {
-                                        e.printStackTrace();
+//                                        e.printStackTrace();
+                                        System.out.println("It is closed. Help");
                                 } catch (InterruptedException e) {
                                         e.printStackTrace();
                                     } catch (BrokenBarrierException e) {
@@ -211,9 +224,7 @@ public class Participant {
 
 
                 }
-                System.out.println("Before");
                 barrier.await();
-                System.out.println("After");
                 start_choosing(vote_opt_port);
 
 
@@ -238,27 +249,41 @@ public class Participant {
             public void run() {
                 try
                 {
+                    List<Integer> temp= new ArrayList<>();
+                    Integer porting;
                     // getting localhost ip
                     InetAddress ip = InetAddress.getByName("localhost");
 
                     // establish the connection with server port
-                    Iterator<Integer> it= other_part.iterator();
-                    while(it.hasNext()) {
-                        Socket s=null;
-                        try {
-                            s = new Socket(ip, it.next());
-                        }catch (SocketException e){
+                    while(allOtherPeers.size()!=other_part.size()) {
+                        Iterator<Integer> it = other_part.iterator();
+                        while (it.hasNext()) {
+                            Socket s = null;
+                            porting= it.next();
+                            if(temp.contains(porting)){
+                                break;
+                            }else {
+                                try {
+                                    s = new Socket(ip, porting);
+                                } catch (SocketException e) {
 
-                            System.out.println("Socket Exception");
-                            break;
-                        }
+                                    System.out.println("Socket Exception");
+                                    break;
+                                }
+                                temp.add(porting);
+                                allOtherPeers.add(s);
+
+                                DataOutputStream dos = new DataOutputStream(s.getOutputStream());
+
+                                dos.writeUTF(my_opt);
+                                dos.flush();
+                            }
 //                        all.add(s);
-                        // obtaining input and out streams
-                        DataOutputStream dos = new DataOutputStream(s.getOutputStream());
 
-                            dos.writeUTF(my_opt);
-                            dos.flush();
+                            // obtaining input and out streams
+                        }
                     }
+                    temp.clear();
 
                 }catch(Exception e){
                     e.printStackTrace();
@@ -275,8 +300,6 @@ public class Participant {
     }
     public void start_choosing(Map<Integer, String> str){
 //        keep_score.clear();
-
-        System.out.println("aaa");
 
         keep_score.put(this.my_vote_letter, 1);
         for(String it:str.values()){
@@ -301,11 +324,12 @@ public class Participant {
             }else{
                 if(max == this.keep_score.get(i))
                 {
-                    result= "Tie";
+                    result= result+ "_Tie_"+i;
                 }
             }
         }
         this.final_resul=result;
+        System.out.println("N-e-am dacis: " + this.final_resul);
         this.flagR.set(true);
     }
 }

@@ -12,19 +12,21 @@ class MessageToken{
      */
     static Token getToken(String req) {
         StringTokenizer sTokenizer = new StringTokenizer(req);
+//        System.out.println("Message Token cu val de:");
+//        System.out.println(req);
         if (!(sTokenizer.hasMoreTokens()))
             return null;
         String firstToken = sTokenizer.nextToken();
         if (firstToken.equals("JOIN")) {
             if (sTokenizer.hasMoreTokens())
-                return new JoinToken(req, sTokenizer.nextToken());
+                return new JoinToken(req, sTokenizer.nextToken().trim());
             else
                 return null;
         }
         if (firstToken.equals("DETAILS")) {
             Set<Integer> ports = new HashSet<>();
             while (sTokenizer.hasMoreTokens())
-                ports.add(Integer.parseInt(sTokenizer.nextToken()));
+                ports.add(Integer.parseInt(sTokenizer.nextToken().trim()));
             return new DetailsToken(req, ports);
         }
         if (firstToken.equals("VOTE_OPTIONS")) {
@@ -36,15 +38,17 @@ class MessageToken{
         if (firstToken.equals("OUTCOME")) {
             String outcome = sTokenizer.nextToken();
             List<Integer> ports = new ArrayList<>();
-            while (sTokenizer.hasMoreTokens())
-                ports.add(Integer.parseInt(sTokenizer.nextToken()));
+            Integer now;
+            while (sTokenizer.hasMoreTokens()) {
+                ports.add(Integer.parseInt(sTokenizer.nextToken().trim()));
+            }
             return new OutcomeToken(req, outcome, ports);
         }
         if (firstToken.equals("VOTE")) {
             Integer port = null;
             String vote = null;
             if (sTokenizer.hasMoreTokens()) {
-                port = Integer.parseInt(sTokenizer.nextToken());
+                port = Integer.parseInt(sTokenizer.nextToken().trim());
             }
             if(sTokenizer.hasMoreTokens()){
                 vote = sTokenizer.nextToken();
