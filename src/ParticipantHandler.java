@@ -36,7 +36,7 @@ public class ParticipantHandler extends Thread {
 
                 // receive the answer from client
                 toreturn= dis.readUTF();
-                System.out.println("I am in handler "+toreturn);
+                //System.out.println("I am in handler "+toreturn);
                 received = (Token) MessageToken.getToken(toreturn);
 
 
@@ -67,7 +67,7 @@ public class ParticipantHandler extends Thread {
                     send = send + " " + Integer.toString(now);
                 }
             }
-
+            System.out.println(send+" TO "+this.port);
             dos.writeUTF(send);
             dos.flush();
         }

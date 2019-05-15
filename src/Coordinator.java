@@ -83,24 +83,23 @@ public class Coordinator {
 
         }
 
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                int i = 0;
-                    for (i = 0; i < cord.handlers.size(); i++) {
-                        if (cord.handlers.get(i).flagJoin.get()) {
-                            cord.setAll_part(cord.handlers.get(i).port);
-                            //System.out.println(cord.handlers.get(i).port);
-                        }
 
+                    while(cord.number_of_part>cord.all_part.size()) {
+                        for (ParticipantHandler j : cord.handlers) {
+                            if (j.flagJoin.get()) {
+                                cord.setAll_part(j.port);
+//                            System.out.println("Ports "+j.port);
+                            }
+
+                        }
                     }
 
-
+                System.out.println("All ports: " +cord.all_part.size());
                 String send= "DETAILS";
-                for (i = 0; i < cord.handlers.size(); i++) {
-                    if (cord.handlers.get(i).flagJoin.get()) {
+                for (ParticipantHandler p:cord.handlers) {
+                    if (p.flagJoin.get()) {
                         try {
-                            cord.handlers.get(i).writeToParticipantDetails(send, cord.all_part);
+                            p.writeToParticipantDetails(send, cord.all_part);
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
@@ -109,16 +108,11 @@ public class Coordinator {
 
                 }
 
-            }
-        }).start();
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                String send= "VOTE_OPTIONS";
-                for (int i = 0; i < cord.handlers.size(); i++) {
-                    if (cord.handlers.get(i).flagJoin.get()) {
+                String sendv= "VOTE_OPTIONS";
+                for (ParticipantHandler p:cord.handlers) {
+                    if (p.flagJoin.get()) {
                         try {
-                            cord.handlers.get(i).writeToParticipantOptions(send, cord.options);
+                            p.writeToParticipantOptions(sendv, cord.options);
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
@@ -127,8 +121,7 @@ public class Coordinator {
 
                 }
 
-            }
-        }).start();
+
 
 
         new Thread(new Runnable() {
@@ -138,7 +131,7 @@ public class Coordinator {
                     for (int i = 0; i < cord.handlers.size(); i++) {
                         if (cord.handlers.get(i).flagVote.get()) {
                             cord.outcomes.add(cord.handlers.get(i).final_v);
-                            System.out.println("From Handlers "+cord.handlers.get(i).final_v);
+                           // System.out.println("From Handlers "+cord.handlers.get(i).final_v);
                         }
 
                     }
@@ -146,14 +139,14 @@ public class Coordinator {
                     {
                         for(String st: cord.outcomes){
                             cord.outcomes_not_replicas.add(st);
-                            System.out.println("from outcomes not replicas "+st);
+                           // System.out.println("from outcomes not replicas "+st);
                         }
                         if(cord.outcomes_not_replicas.size()==1){
                             String result;
                             Iterator<String> it = cord.outcomes_not_replicas.iterator();
                             result = it.next();
                                 System.out.println("Final " + result);
-                                if (result.contains("_Tie_")) {
+                                if (result.contains("Tie")) {
                                     if (cord.options.size() > 1) {
                                         cord.options.remove(cord.options.size() - 1);
                                     }
@@ -191,10 +184,41 @@ public class Coordinator {
                                         cord.outcomes_not_replicas.clear();
                                         cord.outcomes.clear();
                                     }else{
-                                        System.out.println("The only possible option "+cord.options.get(0));
+//                                        System.out.println("The only possible option "+cord.options.get(0));
+//                                        cord.outcomes_not_replicas.clear();
+//                                        cord.outcomes.clear();
+                                        for (int i = 0; i < cord.handlers.size(); i++) {
+                                            if (cord.handlers.get(i).flagVote.get()) {
+                                                cord.handlers.get(i).flagVote.set(false);
+                                            }
+
+                                        }
+                                        //sents to each participant the Restart instruction so that it cleans all
+                                        for (int i = 0; i < cord.handlers.size(); i++) {
+                                            try {
+                                                cord.handlers.get(i).dos.writeUTF("RESTART");
+                                                cord.handlers.get(i).dos.flush();
+                                            } catch (IOException e) {
+                                                e.printStackTrace();
+                                            }
+                                        }
+
+                                        //sends once again all the options to trigger the voting again
+                                        String send = "VOTE_OPTIONS";
+                                        for (int i = 0; i < cord.handlers.size(); i++) {
+                                            if (cord.handlers.get(i).flagJoin.get()) {
+                                                try {
+                                                    cord.handlers.get(i).writeToParticipantOptions(send, cord.options);
+                                                } catch (IOException e) {
+                                                    e.printStackTrace();
+                                                }
+
+                                            }
+                                        }
+                                        //erases all the elements
                                         cord.outcomes_not_replicas.clear();
                                         cord.outcomes.clear();
-                                        break;
+
                                     }
 
 

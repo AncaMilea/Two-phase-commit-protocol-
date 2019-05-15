@@ -91,7 +91,7 @@ public class Participant {
                                             out = out + " " + it;
                                         }
                                         out = out + " " + p.getPort_part();
-                                        System.out.println("Before token sent "+out);
+                                        //System.out.println("Before token sent "+out);
                                         if (out != null) {
                                             dos.writeUTF(out);
                                             dos.flush();
@@ -208,7 +208,7 @@ public class Participant {
 
                                     } catch (IOException e) {
 //                                        e.printStackTrace();
-                                        System.out.println("It is closed. Help");
+                                        //System.out.println("It is closed. Help");
                                 } catch (InterruptedException e) {
                                         e.printStackTrace();
                                     } catch (BrokenBarrierException e) {
@@ -255,6 +255,7 @@ public class Participant {
                     InetAddress ip = InetAddress.getByName("localhost");
 
                     // establish the connection with server port
+                    System.out.println("This many part "+other_part.size());
                     while(allOtherPeers.size()!=other_part.size()) {
                         Iterator<Integer> it = other_part.iterator();
                         while (it.hasNext()) {
@@ -283,6 +284,7 @@ public class Participant {
                             // obtaining input and out streams
                         }
                     }
+                    System.out.println("There are participants connected "+temp.size());
                     temp.clear();
 
                 }catch(Exception e){
@@ -324,7 +326,7 @@ public class Participant {
             }else{
                 if(max == this.keep_score.get(i))
                 {
-                    result= result+ "_Tie_"+i;
+                    result=  "Tie";
                 }
             }
         }
