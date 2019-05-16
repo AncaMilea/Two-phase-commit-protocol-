@@ -92,10 +92,14 @@ public class Participant {
                                         }
                                         out = out + " " + p.getPort_part();
                                         //System.out.println("Before token sent "+out);
-                                        if (out != null) {
-                                            dos.writeUTF(out);
-                                            dos.flush();
-
+                                        if (p.getFailure_type()==1) {
+                                            System.out.println("I am failing with 2");
+                                            System.exit(2);
+                                        }else{
+                                            if(p.getFailure_type()==0) {
+                                                dos.writeUTF(out);
+                                                dos.flush();
+                                            }
                                         }
                                     } catch (IOException e) {
                                         e.printStackTrace();

@@ -3,10 +3,14 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+
+
 
 public class Coordinator {
         Integer port;
@@ -127,37 +131,39 @@ public class Coordinator {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                while(!(cord.outcomes.size() == cord.handlers.size())) {
-                    for (int i = 0; i < cord.handlers.size(); i++) {
-                        if (cord.handlers.get(i).flagVote.get()) {
-                            cord.outcomes.add(cord.handlers.get(i).final_v);
-                           // System.out.println("From Handlers "+cord.handlers.get(i).final_v);
+                while(true) {
+                    while (!(cord.outcomes.size() == cord.handlers.size())) {
+
+                        for (int i = 0; i < cord.handlers.size(); i++) {
+                            if (cord.handlers.get(i).flagVote.get()) {
+                                cord.outcomes.add(cord.handlers.get(i).final_v);
+                                // System.out.println("From Handlers "+cord.handlers.get(i).final_v);
+                            }
                         }
 
                     }
-                    if(cord.outcomes.size()==cord.handlers.size())
-                    {
-                        for(String st: cord.outcomes){
+                    if (cord.outcomes.size() == cord.handlers.size()) {
+                        for (String st : cord.outcomes) {
                             cord.outcomes_not_replicas.add(st);
-                           // System.out.println("from outcomes not replicas "+st);
+                            // System.out.println("from outcomes not replicas "+st);
                         }
-                        if(cord.outcomes_not_replicas.size()==1){
+                        if (cord.outcomes_not_replicas.size() == 1) {
                             String result;
                             Iterator<String> it = cord.outcomes_not_replicas.iterator();
                             result = it.next();
-                                System.out.println("Final " + result);
-                                if (result.contains("Tie")) {
-                                    if (cord.options.size() > 1) {
-                                        cord.options.remove(cord.options.size() - 1);
-                                    }
-                                    //sets to false the flags so that it waits until the new value comes in
-                                    if(cord.options.size()>1) {
-                                        for (int i = 0; i < cord.handlers.size(); i++) {
-                                            if (cord.handlers.get(i).flagVote.get()) {
-                                                cord.handlers.get(i).flagVote.set(false);
-                                            }
-
+                            System.out.println("Final " + result);
+                            if (result.contains("Tie")) {
+                                if (cord.options.size() > 1) {
+                                    cord.options.remove(cord.options.size() - 1);
+                                }
+                                //sets to false the flags so that it waits until the new value comes in
+                                if (cord.options.size() > 1) {
+                                    for (int i = 0; i < cord.handlers.size(); i++) {
+                                        if (cord.handlers.get(i).flagVote.get()) {
+                                            cord.handlers.get(i).flagVote.set(false);
                                         }
+
+                                    }
                                     //sents to each participant the Restart instruction so that it cleans all
                                     for (int i = 0; i < cord.handlers.size(); i++) {
                                         try {
@@ -168,83 +174,70 @@ public class Coordinator {
                                         }
                                     }
 
-                                        //sends once again all the options to trigger the voting again
-                                        String send = "VOTE_OPTIONS";
-                                        for (int i = 0; i < cord.handlers.size(); i++) {
-                                            if (cord.handlers.get(i).flagJoin.get()) {
-                                                try {
-                                                    cord.handlers.get(i).writeToParticipantOptions(send, cord.options);
-                                                } catch (IOException e) {
-                                                    e.printStackTrace();
-                                                }
-
-                                            }
-                                        }
-                                        //erases all the elements
-                                        cord.outcomes_not_replicas.clear();
-                                        cord.outcomes.clear();
-                                    }else{
-//                                        System.out.println("The only possible option "+cord.options.get(0));
-//                                        cord.outcomes_not_replicas.clear();
-//                                        cord.outcomes.clear();
-                                        for (int i = 0; i < cord.handlers.size(); i++) {
-                                            if (cord.handlers.get(i).flagVote.get()) {
-                                                cord.handlers.get(i).flagVote.set(false);
-                                            }
-
-                                        }
-                                        //sents to each participant the Restart instruction so that it cleans all
-                                        for (int i = 0; i < cord.handlers.size(); i++) {
+                                    //sends once again all the options to trigger the voting again
+                                    String send = "VOTE_OPTIONS";
+                                    for (int i = 0; i < cord.handlers.size(); i++) {
+                                        if (cord.handlers.get(i).flagJoin.get()) {
                                             try {
-                                                cord.handlers.get(i).dos.writeUTF("RESTART");
-                                                cord.handlers.get(i).dos.flush();
+                                                cord.handlers.get(i).writeToParticipantOptions(send, cord.options);
                                             } catch (IOException e) {
                                                 e.printStackTrace();
                                             }
+
+                                        }
+                                    }
+                                    //erases all the elements
+                                    cord.outcomes_not_replicas.clear();
+                                    cord.outcomes.clear();
+                                } else {
+//                                        System.out.println("The only possible option "+cord.options.get(0));
+//                                        cord.outcomes_not_replicas.clear();
+//                                        cord.outcomes.clear();
+                                    for (int i = 0; i < cord.handlers.size(); i++) {
+                                        if (cord.handlers.get(i).flagVote.get()) {
+                                            cord.handlers.get(i).flagVote.set(false);
                                         }
 
-                                        //sends once again all the options to trigger the voting again
-                                        String send = "VOTE_OPTIONS";
-                                        for (int i = 0; i < cord.handlers.size(); i++) {
-                                            if (cord.handlers.get(i).flagJoin.get()) {
-                                                try {
-                                                    cord.handlers.get(i).writeToParticipantOptions(send, cord.options);
-                                                } catch (IOException e) {
-                                                    e.printStackTrace();
-                                                }
+                                    }
+                                    //sents to each participant the Restart instruction so that it cleans all
+                                    for (int i = 0; i < cord.handlers.size(); i++) {
+                                        try {
+                                            cord.handlers.get(i).dos.writeUTF("RESTART");
+                                            cord.handlers.get(i).dos.flush();
+                                        } catch (IOException e) {
+                                            e.printStackTrace();
+                                        }
+                                    }
 
+                                    //sends once again all the options to trigger the voting again
+                                    String send = "VOTE_OPTIONS";
+                                    for (int i = 0; i < cord.handlers.size(); i++) {
+                                        if (cord.handlers.get(i).flagJoin.get()) {
+                                            try {
+                                                cord.handlers.get(i).writeToParticipantOptions(send, cord.options);
+                                            } catch (IOException e) {
+                                                e.printStackTrace();
                                             }
+
                                         }
-                                        //erases all the elements
-                                        cord.outcomes_not_replicas.clear();
-                                        cord.outcomes.clear();
-
                                     }
-
-
-                                }else{
-                                    if(result.equals(" V"))
-                                    {
-                                        System.out.println("Should break it");
-                                    }else{
-                                        System.out.println("be done");
-                                        cord.outcomes_not_replicas.clear();
-                                        cord.outcomes.clear();
-                                        break;
-                                    }
+                                    //erases all the elements
+                                    cord.outcomes_not_replicas.clear();
+                                    cord.outcomes.clear();
 
                                 }
 
-                    }else{
-                           if(cord.outcomes_not_replicas.size()==0)
-                           {
-                               System.out.println("Si'a bagat ceva in rezultat");
-                           }else{
-                               System.out.println("Nici nu ar trebui sa fie asa ceva uman posibil"); //bine ca a intrat aici...fmmm
-                           }
+
+                            } else {
+                                System.out.println("be done");
+                                cord.outcomes_not_replicas.clear();
+                                cord.outcomes.clear();
+                                break;
+                            }
+
                         }
                     }
-             }
+                }
                 System.out.println("I am out of thread");
 
             }
