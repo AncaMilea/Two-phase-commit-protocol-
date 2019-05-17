@@ -26,6 +26,7 @@ public class ParticipantHandler extends Thread {
         this.dos = dos;
     }
 
+    //decrypt the messages
     @Override
     public void run()
     {
@@ -38,28 +39,31 @@ public class ParticipantHandler extends Thread {
 
                     // receive the answer from client
                     toreturn = dis.readUTF();
-
-                    //System.out.println("I am in handler "+toreturn);
+                    //turn it into a Token
                     received = (Token) MessageToken.getToken(toreturn);
 
-
+                    //participants join and therefore their flag will pe set to true so that the Coordinator knows it can use them
                     if (received instanceof JoinToken) {
                         this.port = ((JoinToken) received)._port;
                         flagJoin.set(true);
                         System.out.println("Participant connected " + this.port);
                     }
+                    //just gets the vote for the outcome and sets their flag to true so that they be used
                     if (received instanceof OutcomeToken) {
                         this.final_v = ((OutcomeToken) received)._outcome;
                         this.flagVote.set(true);
                     }
 
                 } catch (IOException e) {
+                    //enters here only in the case of failing with two, so the Coordinator knows this participant is down
                     this.flagOut.set(true);
                 }
             }
         }
 
     }
+
+    //sends the Details with the other ports to each participant
     public void writeToParticipantDetails(String send, Set<Integer> all) throws IOException {
 
         if (send.equals("DETAILS")) {
@@ -76,6 +80,7 @@ public class ParticipantHandler extends Thread {
             dos.flush();
         }
     }
+    //sends the options for the vote
     public void writeToParticipantOptions(String send, List<String> opt) throws IOException {
         if (send.equals("VOTE_OPTIONS")) {
             String now;

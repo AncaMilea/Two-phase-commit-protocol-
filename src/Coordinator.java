@@ -17,10 +17,10 @@ public class Coordinator {
         Integer port;
         Integer number_of_part;
         List<String> options;
-        Set<Integer> all_part= new HashSet<>();
+        Set<Integer> available_Participants= new HashSet<>();
         List<ParticipantHandler> handlers = new ArrayList<>();
-        Map<Integer,String> outcomes = new ConcurrentHashMap();
-        Set<String> outcomes_not_replicas = new HashSet<>();
+        Map<Integer,String> outcomes_ports = new ConcurrentHashMap();
+        Set<String> outcome_final = new HashSet<>();
     public AtomicBoolean flagStartOptions = new AtomicBoolean(false);
     public Coordinator(String port, String parts, List<String> options)
     {
@@ -43,7 +43,7 @@ public class Coordinator {
     }
 
     public void setAll_part(Integer port){
-        this.all_part.add(port);
+        this.available_Participants.add(port);
     }
 
     public static void main(String[] args) throws IOException {
@@ -88,7 +88,7 @@ public class Coordinator {
         }
 
 
-        while(cord.number_of_part>cord.all_part.size()) {
+        while(cord.number_of_part>cord.available_Participants.size()) {
              for (ParticipantHandler j : cord.handlers) {
                  if (j.flagJoin.get()) {
                     cord.setAll_part(j.port);
@@ -104,53 +104,52 @@ public class Coordinator {
             @Override
             public void run() {
                 while(true) {
-                    while (!(cord.outcomes.size() == cord.handlers.size())) {
+                    //tries to get the outcomes_ports from all the available participants
+                    while (!(cord.outcomes_ports.size() == cord.handlers.size())) {
 
                         for (int i = 0; i < cord.handlers.size(); i++) {
                             if(cord.handlers.get(i).flagOut.get()==false){
                                if (cord.handlers.get(i).flagVote.get()) {
-                                   if(!cord.outcomes.containsValue(cord.handlers.get(i).port)) {
-                                       cord.outcomes.put(cord.handlers.get(i).port,cord.handlers.get(i).final_v);
-                                       //System.out.println("votes " + cord.handlers.get(i).final_v + " " + cord.handlers.get(i).port);
-                                       //cord.handlers.remove(i);
+                                   //adds the outcome only if it is from another port
+                                   if(!cord.outcomes_ports.containsValue(cord.handlers.get(i).port)) {
+                                       cord.outcomes_ports.put(cord.handlers.get(i).port,cord.handlers.get(i).final_v);
+
                                    }
                                 }
                             }else{
-                                System.out.println("I am here");
-                                cord.all_part.remove(cord.handlers.get(i).port);
-                                for(Integer c: cord.all_part)
-                                {
-                                    System.out.println(c);
-                                }
+                                //remove also the ports that should be sent again
+                                cord.available_Participants.remove(cord.handlers.get(i).port);
+                                //in case it is closed, it is removed from the handler so it can't be accessed again
                                 cord.handlers.remove(i);
-                                System.out.println("Size "+cord.handlers.size()+ " --"+cord.outcomes.size());
                             }
                         }
 
                     }
-                   // System.out.println("I am out "+cord.outcomes.size());
-                    if (cord.outcomes.size() == cord.handlers.size()) {
-                        for (String st : cord.outcomes.values()) {
-                            cord.outcomes_not_replicas.add(st);
-                        }
-                        if (cord.outcomes_not_replicas.size() == 1) {
-                            String result;
-                            Iterator<String> it = cord.outcomes_not_replicas.iterator();
-                            result = it.next();
-                            System.out.println("Final " + result);
+                    System.out.println("Got votes from everyone");
 
-                            if (result.contains("Tie")) {
+                    if (cord.outcomes_ports.size() == cord.handlers.size()) {
+                        for (String st : cord.outcomes_ports.values()) {
+                            cord.outcome_final.add(st);
+                        }
+                        if (cord.outcome_final.size() == 1) {
+                            String result;
+                            Iterator<String> it = cord.outcome_final.iterator();
+                            result = it.next();
+
+                            if (result.contains("TIE")) {
+                                //removes a option only if there are more than one vote in the list
                                 if (cord.options.size() > 1) {
                                     cord.options.remove(cord.options.size() - 1);
                                 }
-                                    //sets to false the flags so that it waits until the new value comes in
+
+                                //sets to false the flags so that it waits until the new value comes in
                                 for (int i = 0; i < cord.handlers.size(); i++) {
                                     if (cord.handlers.get(i).flagVote.get()) {
                                         cord.handlers.get(i).flagVote.set(false);
                                     }
 
                                 }
-                                    //sents to each participant the Restart instruction so that it cleans all
+                                //sents to each participant the Restart instruction so that it cleans all
                                 for (int i = 0; i < cord.handlers.size(); i++) {
                                    try {
                                        cord.handlers.get(i).dos.writeUTF("RESTART");
@@ -166,9 +165,9 @@ public class Coordinator {
 
                                 //sends the new options to the participants
                                 cord.sendVoteOpt(cord,cord.getOptions());
-                                    //erases all the elements
-                                cord.outcomes_not_replicas.clear();
-                                cord.outcomes.clear();
+                                //erases all the elements with the outcomes_ports
+                                cord.outcome_final.clear();
+                                cord.outcomes_ports.clear();
                             } else {
                                 System.out.println("The final outcome is "+result);
                                 break;
@@ -177,11 +176,10 @@ public class Coordinator {
                         }
                     }
                 }
-                System.out.println("I am out of thread");
-
             }
         }).start();
     }
+    //sends the vote to all the participants
     public void sendVoteOpt(Coordinator cord,List<String> opt){
 
                 String send= "VOTE_OPTIONS";
@@ -198,14 +196,14 @@ public class Coordinator {
                 }
 
     }
+    //sends the details with the ports to the participants
     public void sendDetails(Coordinator cord){
 
         String send= "DETAILS";
         for (ParticipantHandler p:cord.handlers) {
             if (p.flagJoin.get()) {
                 try {
-
-                        p.writeToParticipantDetails(send, cord.all_part);
+                    p.writeToParticipantDetails(send, cord.available_Participants);
 
                 } catch (IOException e) {
                     e.printStackTrace();

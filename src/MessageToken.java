@@ -8,12 +8,10 @@ class MessageToken{
     MessageToken() { ; }
 
     /**
-     * Parses requests.
+     * Parses requests and saves the information in the given token
      */
     static Token getToken(String req) {
         StringTokenizer sTokenizer = new StringTokenizer(req);
-//        System.out.println("Message Token cu val de:");
-//        System.out.println(req);
         if (!(sTokenizer.hasMoreTokens()))
             return null;
         String firstToken = sTokenizer.nextToken();
@@ -63,15 +61,13 @@ class MessageToken{
     }
 }
 
-/**
- * The Token Prototype.
- */
+
 abstract class Token {
     String _req;
 }
 
 /**
- * Syntax: JOIN &lt;name&gt;
+ * Syntax: JOIN port
  */
 class JoinToken extends Token {
     Integer _port;
@@ -82,7 +78,7 @@ class JoinToken extends Token {
 }
 
 /**
- * Syntax: YELL &lt;msg&gt;
+ * Syntax: Details <[ports]>
  */
 class DetailsToken extends Token {
     Set<Integer> _ports;
@@ -94,7 +90,7 @@ class DetailsToken extends Token {
 }
 
 /**
- * Syntax: TELL &lt;rcpt&gt; &lt;msg&gt;
+ * Syntax: VoteOptions <[votes]>
  */
 class VoteOptionsToken extends Token {
     List<String> _votes;
@@ -105,7 +101,9 @@ class VoteOptionsToken extends Token {
 
     }
 }
-
+/**
+ * Syntax: Outcome <vote> <[ports]>
+ */
 class OutcomeToken extends Token {
     List<Integer> _ports;
     String _outcome;
@@ -116,6 +114,9 @@ class OutcomeToken extends Token {
         this._ports = new ArrayList<>(porting);
     }
 }
+/**
+ * Syntax: Vote <vote> <port>
+ */
 class VoteToken extends Token {
     String _vote;
     Integer _port;
@@ -125,7 +126,9 @@ class VoteToken extends Token {
         this._port=port;
     }
 }
-
+/**
+ * Syntax: Restart
+ */
 class RestartToken extends Token {
     RestartToken(String req) { this._req = req; }
 }
