@@ -92,8 +92,9 @@ public class Participant {
                                         }
                                         out = out + " " + p.getPort_part();
                                         //System.out.println("Before token sent "+out);
-                                        if (p.getFailure_type()==1) {
+                                        if (p.getFailure_type()==2) {
                                             System.out.println("I am failing with 2");
+
                                             System.exit(2);
                                         }else{
                                             if(p.getFailure_type()==0) {
@@ -141,9 +142,17 @@ public class Participant {
             this.my_vote_letter= this.options.get(aRandomPos);
             this.my_option = "VOTE " + this.getPort_part()+" "+ this.my_vote_letter;
             System.out.println("My option is "+this.my_option);
+            System.out.println("The current size of part "+this.other_part.size());
+            if(this.other_part.size()==0)
+            {
 
-            this.startListening(this.getPort_part());
-            this.startTalking(this.my_option);
+                this.final_resul= this.my_vote_letter;
+                this.flagR.set(true);
+                System.out.println(this.final_resul);
+            }else {
+                this.startListening(this.getPort_part());
+                this.startTalking(this.my_option);
+            }
 
         }
         if(type instanceof RestartToken){
@@ -165,6 +174,7 @@ public class Participant {
             allOtherPeers.clear();
             this.flagR.set(false);
             this.flagWhile.set(false);
+            this.other_part.clear();
         }
 
     }
@@ -212,7 +222,6 @@ public class Participant {
 
                                     } catch (IOException e) {
 //                                        e.printStackTrace();
-                                        //System.out.println("It is closed. Help");
                                 } catch (InterruptedException e) {
                                         e.printStackTrace();
                                     } catch (BrokenBarrierException e) {
@@ -283,9 +292,7 @@ public class Participant {
                                 dos.writeUTF(my_opt);
                                 dos.flush();
                             }
-//                        all.add(s);
 
-                            // obtaining input and out streams
                         }
                     }
                     System.out.println("There are participants connected "+temp.size());

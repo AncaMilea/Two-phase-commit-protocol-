@@ -15,6 +15,7 @@ public class ParticipantHandler extends Thread {
     public String final_v;
     public AtomicBoolean flagJoin = new AtomicBoolean(false);
     public AtomicBoolean flagVote = new AtomicBoolean(false);
+    public AtomicBoolean flagOut = new AtomicBoolean(false);
 
 
     // Constructor
@@ -32,26 +33,29 @@ public class ParticipantHandler extends Thread {
         String toreturn;
         while (true)
         {
-            try {
+            if(this.flagOut.get()==false) {
+                try {
 
-                // receive the answer from client
-                toreturn= dis.readUTF();
-                //System.out.println("I am in handler "+toreturn);
-                received = (Token) MessageToken.getToken(toreturn);
+                    // receive the answer from client
+                    toreturn = dis.readUTF();
+
+                    //System.out.println("I am in handler "+toreturn);
+                    received = (Token) MessageToken.getToken(toreturn);
 
 
-                if(received instanceof JoinToken){
-                    this.port= ((JoinToken) received)._port;
-                    flagJoin.set(true);
-                    System.out.println("Participant connected "+this.port);
+                    if (received instanceof JoinToken) {
+                        this.port = ((JoinToken) received)._port;
+                        flagJoin.set(true);
+                        System.out.println("Participant connected " + this.port);
+                    }
+                    if (received instanceof OutcomeToken) {
+                        this.final_v = ((OutcomeToken) received)._outcome;
+                        this.flagVote.set(true);
+                    }
+
+                } catch (IOException e) {
+                    this.flagOut.set(true);
                 }
-                if(received instanceof OutcomeToken){
-                    this.final_v = ((OutcomeToken) received)._outcome;
-                    this.flagVote.set(true);
-                }
-
-            } catch (IOException e) {
-                e.printStackTrace();
             }
         }
 
